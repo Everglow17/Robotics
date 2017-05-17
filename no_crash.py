@@ -31,7 +31,7 @@ def ir_callback(data):
 
     #Edition 1:
     #only judge left 80 degree and right 80 degree, aviod crash
-    global timer, istwist, twistimer
+    global timer, istwist, twistimer, left_nz, right_nz
     global left_max
     global right_max
     global di, left, right, left_average, right_average, shift
@@ -65,27 +65,43 @@ def ir_callback(data):
         elif timer >= 260 and shift:
             shift = False
 
+            left_nz = [True for i in range(109)]
+            for i in range(1, 110):
+                if left[i] - left[i - 1] >= 50 and left[i] - left[i + 1] >= 50:
+                    left_nz[i] = False
+
+            right_nz = [True for i in range(109)]
+            for i in range(1, 110):
+                if right[i] - right[i - 1] >= 50 and right[i] - right[i + 1] >= 50:
+                    right_nz[i] = False
+
             left_max = 0
-            left_num = 12
-            print("left_len", len(left))
+            left_num = 0
+
             for j in range(11):
                 t = 0
+                ct = 0
                 for i in range(10):
-                    t += left[i+j*10]
-                t = t/10
+                    if left_nz:
+                        ct += 1
+                        t += left[i+j*10]
+                t = t/ct
                 left_average.append(t)
                 if left_max < t:
                     left_max = t
                     left_num = j
-            left_num = left_num - 12
+            left_num = left_num - 11
 
             right_max = 0
             right_num = 0
             for j in range(11):
                 t = 0
+                ct = 0
                 for i in range(10):
-                    t += right[i+j*10]
-                t = t/10
+                    if right_nz:
+                        ct += 1
+                        t += right[i+j*10]
+                t = t/ct
                 right_average.append(t)
                 if right_max < t:
                     right_max = t
@@ -93,7 +109,7 @@ def ir_callback(data):
 
             angular = left_num + right_num
 
-            if left_max>= 200 or right_max>=200:
+            if left_max >= 200 or right_max >= 200:
                 istwist = True
 
             if abs(angular) <= 1:
@@ -111,10 +127,9 @@ def ir_callback(data):
             elif angular < -8:
                 di = -0.3
 
-    if left_max>= 280 and istwist:
+    if left_max >= 280 and istwist:
         twist.linear.x = 0.3
         twist.angular.z = -0.7
-
 
     elif right_max >= 280 and istwist:
         twist.linear.x = 0.3
@@ -167,6 +182,7 @@ if __name__ == '__main__':
     left_max, right_max = 0, 0
     left, right = [], []
     left_average, right_average = [], []
+    left_nz, right_nz = [], []
     timer, twistimer = 0, 0
     shift, istwist = False, False
     di = 0
