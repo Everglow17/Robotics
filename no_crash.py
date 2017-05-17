@@ -13,9 +13,9 @@ def ir_callback(data):
     # Twist is a message type in ros, here we use an Twist message to control kobuki's speed
     # twist. linear.x is the forward velocity, if it is zero, robot will be static,
     # if it is grater than 0, robot will move forward, otherwise, robot will move backward
-    # twist.angular.axis is the rotatin velocity around the axis
+    # twist.angular.axis is the rotation velocity around the axis
     #
-    # Around which axis do we have to turn? In wich direction will it turn with a positive value?
+    # Around which axis do we have to turn? In which direction will it turn with a positive value?
     # Right hand coordinate system: x forward, y left, z up
 
     twist = Twist()
