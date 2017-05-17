@@ -19,7 +19,7 @@ def ir_callback(data):
     # Right hand coordinate system: x forward, y left, z up
 
     twist = Twist()
-    # twist.linear.x = 0.25
+    twist.linear.x = 0.25
     twist.angular.z = 0.
 
 
@@ -112,12 +112,12 @@ def ir_callback(data):
                 di = -0.3
 
     if left_max>= 280 and istwist:
-        # twist.linear.x = 0.3
+        twist.linear.x = 0.3
         twist.angular.z = -0.7
 
 
     elif right_max >= 280 and istwist:
-        # twist.linear.x = 0.3
+        twist.linear.x = 0.3
         twist.angular.z = 0.7
 
     else:
