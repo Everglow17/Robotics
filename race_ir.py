@@ -6,56 +6,60 @@ from std_msgs.msg import Int32
 
 # the output message controlling the speed and direction of the robot
 from geometry_msgs.msg import Twist
-
-import curses
-
-# set up curses (console input and output system)
-stdscr = curses.initscr()
-curses.noecho()
-curses.cbreak()
-stdscr.nodelay(1)
-stdscr.keypad(1)
-
-# global variable for steering commands to the robot
-twist = Twist()
-
-shapeCounter = 0
-
-# This is also responsible for the printout
-
-      #shapeCounter += 1
-#def printInfo():
-    #global twist
-    #global stdscr
-    #global activeShape
-    # prepare an informative line of text
-    #text = "Kobuki shape %d forward %f  turn %f     " % (activeShape, twist.linear.x, twist.angular.z)
-    # print out the text (at position 0, 0)
-    #stdscr.addstr(0, 0, text)
-
-def pub_in():
-    global shapeCounter
-
-    turnSpeed = 1   #########################
-    forwardSpeed = 1  ########################
-
-    data=____________#(form unknown)[(linear,angle),(linear,angle)]
-    twist.linear.x = forwardSpeed
-
-    #this is a stupid algorithim/can be improved
-
-    #set a set omega
-    while not rospy.is_shutdown(): ####################################
-        shapeCounter += 1
-        if shapeCounter < 1000:##############################
-            twist.angular.z = 1###############################
-        else:
-            twist.angular.z = 0###########################
-        pub.publish(twist)
-        # Sleep as much time as is needed to achive 100 Hz
-        rate.sleep()
-
-
+#
+# import curses
+#
+# # set up curses (console input and output system)
+# stdscr = curses.initscr()
+# curses.noecho()
+# curses.cbreak()
+# stdscr.nodelay(1)
+# stdscr.keypad(1)
+#
+# # global variable for steering commands to the robot
+# twist = Twist()
+#
+# shapeCounter = 0
+#
+# # This is also responsible for the printout
+#int=================================
+            # print("left_num", left_num-12)
+            # print("right_num", right_num)
+            # print("left_average", left_average)
+            # print("right
+#       #shapeCounter += 1
+# #def printInfo():
+#     #global twist
+#     #global stdscr
+#     #global activeShape
+#     # prepare an informative line of text
+#     #text = "Kobuki shape %d forward %f  turn %f     " % (activeShape, twist.linear.x, twist.angular.z)
+#     # print out the text (at position 0, 0)
+#     #stdscr.addstr(0, 0, text)
+#
+# def pub_in():
+#     global shapeCounter
+#
+#     turnSpeed = 1   #########################
+#     forwardSpeed = 1  ########################
+#
+#     data=____________#(form unknown)[(linear,angle),(linear,angle)]
+#     twist.linear.x = forwardSpeed
+#
+#     #this is a stupid algorithim/can be improved
+#
+#     #set a set omega
+#     while not rospy.is_shutdown(): ####################################
+#         shapeCounter += 1
+#         if shapeCounter < 1000:##############################
+#             twist.angular.z = 1###############################
+#         else:
+#             twist.angular.z = 0###########################
+#         pub.publish(twist)
+#         # Sleep as much time as is needed to achive 100 Hz
+#         rate.sleep()
+#
+#
 
 def ir_callback(data):
 
@@ -69,12 +73,13 @@ def ir_callback(data):
     # Right hand coordinate system: x forward, y left, z up
 
     twist = Twist()
-    twist.linear.x = 0.3  # still needs measuring !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    twist.angular.z = 0.
+    twist.linear.x = 0.1 # still needs measuring !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    twist.angular.z = 0.0
     global i
     global left
     global right
-
+    global left_average
+    global right_average
 
     # write your code here
 
@@ -83,11 +88,18 @@ def ir_callback(data):
     data = data.data
     rpr220 = data >> 16
     sharp = data & 0x0000ffff
+    # rpr220 = int("0b"+str(rpr220), 2)
+    # sharp = int("0b"+str(sharp), 2)
 
     # process the data
         # calculate the average
+
+
+
     if rpr220 <= 160:  # the beginning of a circulate
+
         left, right = [], []
+        left_average, right_average = [], []
         i = 0
     else:
         if i<130:
@@ -99,29 +111,31 @@ def ir_callback(data):
             i += 1
 
         elif i >= 260:
-            left_min = 9999999999999999999999
+            left_max = -1
             left_num = 0
             for j in range(13):
+                t = 0
                 for i in range(10):
                     t += left[i+j*10]
                 t = t/10
-                if left_min > t:
-                    left_min = t
+                if left_max < t:
+                    left_max = t
                     left_num = j
-                # left_average[j] = t
+                left_average.append(t)
 
-            right_min = 9999999999999999999999
+            right_max = -1
             right_num = 0
             for j in range(13):
                 for i in range(10):
                     t += right[i+j*10]
                 t = t/10
-                if right_min > t:
-                    right_min = t
+                if right_max < t:
+                    right_max = t
                     right_num = j
-                # right_average[j] = t
+                right_average.append(t)
 
             angular = left_num - 12 + right_num
+            di = 0
             # process the twist
             if abs(angular) <= 1:
                 di = 0
@@ -139,28 +153,15 @@ def ir_callback(data):
                 di = 3
             else:
                 di = 0
-            #
-            # angular = (left_num -12 + right_num)*(45/13)
-            # # process the twist
-            # if abs(angular) <= 3.5:
-            #     di = 0
-            # elif angular > 3.5 and angular <= 14:
-            #     di = -1
-            # elif angular < -3.5 and angular >= -14:
-            #     di = 1
-            # elif angular >14 and angular <=28:
-            #     di = -2
-            # elif angular < -14 and angular >= -28:
-            #     di = 2
-            # elif angular > 28:
-            #     di = -3
-            # elif angular < -28:
-            #     di = 3
-            # else:
-            #     di = 0
 
-        twist.angular.z = 0.3 * di # still needs measuring !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+            twist.angular.z = 3 * di * (-1)# still needs measuring !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+            # test_print=================================
+            print("left_num", left_num-12)
+            print("right_num", right_num)
+            print("left_average", left_average)
+            print("right_average", right_average)
 
 
     # actually publish the twist message
@@ -188,20 +189,21 @@ def range_controller():
 # start the line follow
 if __name__ == '__main__':
     i = 0
-    left, right = [], []
+    left, right= [], []
+    left_average, right_average = [], []
     range_controller()
 
     # for i in range(len(l)):
     #     if l[i][0] < 1 :
     #         print(i)
 
-    try:
-        # Try to make the shape object - the main loop is running in the constructor
-        pub_in()
-    # If there was an exception (for example no roscore running) do ... nothing (and then exit)
-    except rospy.ROSInterruptException:
-        pass
-    finally:
-        # restore the terminal
-        curses.nocbreak(); stdscr.keypad(0); curses.echo()
-        curses.endwin()
+    # try:
+    #     # Try to make the shape object - the main loop is running in the constructor
+    #     pub_in()
+    # # If there was an exception (for example no roscore running) do ... nothing (and then exit)
+    # except rospy.ROSInterruptException:
+    #     pass
+    # finally:
+    #     # restore the terminal
+    #     curses.nocbreak(); stdscr.keypad(0); curses.echo()
+    #     curses.endwin()
