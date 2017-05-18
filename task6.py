@@ -23,7 +23,19 @@ def ButtonEventCallback(data):
         button = "B2"
     rospy.loginfo("Button %s was %s." % (button, state))
 
-
+def BumperEventCallback(data):
+    if ( data.state == BumperEvent.RELEASED ) :
+        state = "released"
+    else:
+        state = "pressed"
+    if ( data.bumper == BumperEvent.LEFT ) :
+        bumper = "Left"
+    elif ( data.bumper == BumperEvent.CENTER ) :
+        bumper = "Center"
+    else:
+        bumper = "Right"
+    rospy.loginfo("%s bumper is %s."%(bumper, state))
+        
 def ir_callback(data):
     # Twist is a message type in ros, here we use an Twist message to control kobuki's speed
     # twist. linear.x is the forward velocity, if it is zero, robot will be static,
