@@ -9,7 +9,6 @@ from geometry_msgs.msg import Twist
 
 def ir_callback(data):
 
-
     # Twist is a message type in ros, here we use an Twist message to control kobuki's speed
     # twist. linear.x is the forward velocity, if it is zero, robot will be static,
     # if it is grater than 0, robot will move forward, otherwise, robot will move backward

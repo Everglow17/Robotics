@@ -20,23 +20,19 @@ from geometry_msgs.msg import Twist
 # twist = Twist()
 #
 # shapeCounter = 0
-#
-# # This is also responsible for the printout
-#int=================================
-            # print("left_num", left_num-12)
-            # print("right_num", right_num)
-            # print("left_average", left_average)
-            # print("right
-#       #shapeCounter += 1
-# #def printInfo():
-#     #global twist
-#     #global stdscr
-#     #global activeShape
-#     # prepare an informative line of text
-#     #text = "Kobuki shape %d forward %f  turn %f     " % (activeShape, twist.linear.x, twist.angular.z)
-#     # print out the text (at position 0, 0)
-#     #stdscr.addstr(0, 0, text)
-#
+
+# This is also responsible for the printout
+
+    # shapeCounter += 1
+#def printInfo():
+    #global twist
+    #global stdscr
+    #global activeShape
+    # prepare an informative line of text
+    #text = "Kobuki shape %d forward %f  turn %f     " % (activeShape, twist.linear.x, twist.angular.z)
+    # print out the text (at position 0, 0)
+    #stdscr.addstr(0, 0, text)
+
 # def pub_in():
 #     global shapeCounter
 #
@@ -58,8 +54,8 @@ from geometry_msgs.msg import Twist
 #         pub.publish(twist)
 #         # Sleep as much time as is needed to achive 100 Hz
 #         rate.sleep()
-#
-#
+
+
 
 def ir_callback(data):
 
@@ -73,13 +69,12 @@ def ir_callback(data):
     # Right hand coordinate system: x forward, y left, z up
 
     twist = Twist()
-    twist.linear.x = 0.1 # still needs measuring !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    twist.angular.z = 0.0
+    twist.linear.x = 0.3  # still needs measuring !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    twist.angular.z = 0.
     global i
     global left
     global right
-    global left_average
-    global right_average
+
 
     # write your code here
 
@@ -88,54 +83,46 @@ def ir_callback(data):
     data = data.data
     rpr220 = data >> 16
     sharp = data & 0x0000ffff
-    # rpr220 = int("0b"+str(rpr220), 2)
-    # sharp = int("0b"+str(sharp), 2)
 
     # process the data
-        # calculate the average
 
-
-
+        # input the data
     if rpr220 <= 160:  # the beginning of a circulate
-
         left, right = [], []
-        left_average, right_average = [], []
         i = 0
     else:
-        if i<130:
+        if i < 130:
             left.append(sharp)
             i += 1
 
-        elif i<260:
+        elif i < 260:
             right.append(sharp)
             i += 1
 
         elif i >= 260:
-            left_max = -1
+            left_min = 9999999999999999999999
             left_num = 0
             for j in range(13):
-                t = 0
                 for i in range(10):
                     t += left[i+j*10]
                 t = t/10
-                if left_max < t:
-                    left_max = t
+                if left_min > t:
+                    left_min = t
                     left_num = j
-                left_average.append(t)
+                # left_average[j] = t
 
-            right_max = -1
+            right_min = 9999999999999999999999
             right_num = 0
             for j in range(13):
                 for i in range(10):
                     t += right[i+j*10]
                 t = t/10
-                if right_max < t:
-                    right_max = t
+                if right_min > t:
+                    right_min = t
                     right_num = j
-                right_average.append(t)
+                # right_average[j] = t
 
             angular = left_num - 12 + right_num
-            di = 0
             # process the twist
             if abs(angular) <= 1:
                 di = 0
@@ -154,14 +141,8 @@ def ir_callback(data):
             else:
                 di = 0
 
+        twist.angular.z = 2.7 * di * (-1) # still needs measuring !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-            twist.angular.z = 3 * di * (-1)# still needs measuring !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-            # test_print=================================
-            print("left_num", left_num-12)
-            print("right_num", right_num)
-            print("left_average", left_average)
-            print("right_average", right_average)
 
 
     # actually publish the twist message
@@ -189,8 +170,7 @@ def range_controller():
 # start the line follow
 if __name__ == '__main__':
     i = 0
-    left, right= [], []
-    left_average, right_average = [], []
+    left, right = [], []
     range_controller()
 
     # for i in range(len(l)):
