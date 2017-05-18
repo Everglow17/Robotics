@@ -4,15 +4,53 @@ import rospy
 # the message that we get from the arduino
 from std_msgs.msg import Int32
 
-from sensor_msgs.msg import LaserScan
 # the output message controlling the speed and direction of the robot
 from geometry_msgs.msg import Twist
 
-from math import sqrt
+from kobuki_msgs.msg import ButtonEvent
+from kobuki_msgs.msg import BumperEvent
+
+
+def ButtonEventCallback(data):
+    global mainswitch
+
+    if (data.state == ButtonEvent.RELEASED):
+        state = "released"
+    else:
+        state = "pressed"
+    if (data.button == ButtonEvent.Button0):
+        button = "B0"
+
+        mainswitch = False
+
+    elif (data.button == ButtonEvent.Button1):
+        button = "B1"
+    else:
+        button = "B2"
+    rospy.loginfo("Button %s was %s." % (button, state))
+
+def BumperEventCallback(data):
+    global mainswitch
+
+    if ( data.state == BumperEvent.RELEASED ) :
+        state = "released"
+    else:
+        state = "pressed"
+
+        mainswitch = True
+
+    if ( data.bumper == BumperEvent.LEFT ) :
+        bumper = "Left"
+    elif ( data.bumper == BumperEvent.CENTER ) :
+        bumper = "Center"
+    else:
+        bumper = "Right"
+    rospy.loginfo("%s bumper is %s."%(bumper, state))
 
 def ir_callback(data):
+
     global left, right, front
-    global left_distace, right_distance, front_distance
+    global left_distance, right_distance, front_distance
     global timer
 
     # Twist is a message type in ros, here we use an Twist message to control kobuki's speed
@@ -24,7 +62,10 @@ def ir_callback(data):
     # Right hand coordinate system: x forward, y left, z up
 
     twist = Twist()
-    twist.linear.x = 0.15
+    if front_distance == 0:
+        twist.linear.x = 0.
+    else:
+        twist.linear.x = 0.15
     twist.angular.z = 0.
 
 
@@ -37,10 +78,8 @@ def ir_callback(data):
     #read and store
     if rpr220 <= 55:
         left, right, front = [], [], []
-        left_distace, right_distance, front_distance = 0, 0, 0
+        left_distance, right_distance, front_distance = 0, 0, 0
         timer = -1
-
-        current_time = rospy.Time.now() #第一个数据扫描的时间 放到改放的位置
 
     else:
         timer += 1
@@ -58,20 +97,23 @@ def ir_callback(data):
 
         elif timer == 260:
             front_distance = sum(front[:])/len(front)
-            left_distace = sum(left[:])/len(left)
+            left_distance = sum(left[:])/len(left)
             right_distance = sum(right[:])/len(right)
-
+    print("front_distance", front_distance)
+    print("left_distance", left_distance)
+    print("right_distance", right_distance)
     if front_distance >= 220:
         twist.linear.x =  0.0
     print(twist.linear.x)
-    twist.angular.z = 0.012 * (right_distance - left_distace)
+    twist.angular.z = 0.012 * (right_distance - left_distance)
 
     # actually publish the twist message
+    if mainswitch:
+        twist.linear.x = 0.0
+        twist.angular.z = 0.0
     kobuki_velocity_pub.publish(twist)
 
-
 def range_controller():
-
     # define the publisher globally
     global kobuki_velocity_pub
 
@@ -83,47 +125,19 @@ def range_controller():
 
     # subscribe to the topic '/ir_data' of message type Int32. The function 'ir_callback' will be called
     # every time a new message is received - the parameter passed to the function is the message
-    rospy.Subscriber("/ir_data", Int32, ir_callback)
 
+    rospy.Subscriber("/mobile_base/events/button", ButtonEvent, ButtonEventCallback)
+    rospy.Subscriber("/mobile_base/events/bumper", BumperEvent, BumperEventCallback)
+    rospy.Subscriber("/ir_data", Int32, ir_callback)
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
 
+
 # start the line follow
 if __name__ == '__main__':
+    mainswitch = False
     left, right, front = [], [], []
-    left_distace, right_distance, front_distance = 0, 0, 0
+    left_distance, right_distance, front_distance = 0, 0, 0
     timer = 0
+
     range_controller()
-
-
-#!/usr/bin/env python
-def scan():
-
-    rospy.init_node('laser_scan_publisher')
-
-    scan_pub = rospy.Publisher('scan', LaserScan, queue_size=50)
-
-    num_readings = 260#读一圈的数据个数
-    laser_frequency = #赫兹
-
-    count = 0
-    
-
-    scan = LaserScan()
-
-    scan.header.stamp = current_time
-    scan.header.frame_id = 'laser_frame'
-    scan.angle_min = -1.57
-    scan.angle_max = 1.57
-    scan.angle_increment = 3.14 / num_readings
-    scan.time_increment = (1.0 / laser_frequency) / (num_readings)
-    scan.range_min = 0.0
-    scan.range_max = 100.0
-
-    scan.ranges = []
-    scan.intensities = []
-    for i in range(0, num_readings):
-        scan.ranges.append(1.0)  # fake data
-        scan.intensities.append(100)
-
-    scan_pub.publish(scan)

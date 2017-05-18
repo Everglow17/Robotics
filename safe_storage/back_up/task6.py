@@ -48,11 +48,6 @@ def BumperEventCallback(data):
     rospy.loginfo("%s bumper is %s."%(bumper, state))
 
 def ir_callback(data):
-
-    global left, right, front
-    global left_distance, right_distance, front_distance
-    global timer
-
     # Twist is a message type in ros, here we use an Twist message to control kobuki's speed
     # twist. linear.x is the forward velocity, if it is zero, robot will be static,
     # if it is grater than 0, robot will move forward, otherwise, robot will move backward
@@ -62,53 +57,18 @@ def ir_callback(data):
     # Right hand coordinate system: x forward, y left, z up
 
     twist = Twist()
-    twist.linear.x = 0.15
+    twist.linear.x = 0.3
     twist.angular.z = 0.
 
-
-
     # write your code here
-    data = data.data
-    rpr220 = data >> 16
-    sharp = data & 0x0000ffff
-
-    #read and store
-    if rpr220 <= 55:
-        left, right, front = [], [], []
-        left_distance, right_distance, front_distance = 0, 0, 0
-        timer = -1
-
-    else:
-        timer += 1
-
-        if 0 <= timer and timer < 124:
-            left.append(sharp)
-
-        elif 124 <= timer and timer <= 135:
-            left.append(sharp)
-            front.append(sharp)
-            right.append(sharp)
-
-        elif 135 < timer and timer <= 259:
-            right.append(sharp)
-
-        elif timer == 260:
-            front_distance = sum(front[:])/len(front)
-            left_distance = sum(left[:])/len(left)
-            right_distance = sum(right[:])/len(right)
-    print("front_distance", front_distance)
-    print("left_distance", left_distance)
-    print("right_distance", right_distance)
-    if front_distance >= 220:
-        twist.linear.x =  0.0
-    print(twist.linear.x)
-    twist.angular.z = 0.012 * (right_distance - left_distance)
-
-    # actually publish the twist message
     if mainswitch:
         twist.linear.x = 0.0
-        twist.angular.z = 0.0
+
+
+
+    # actually publish the twist message
     kobuki_velocity_pub.publish(twist)
+
 
 def range_controller():
     # define the publisher globally
@@ -133,8 +93,5 @@ def range_controller():
 # start the line follow
 if __name__ == '__main__':
     mainswitch = False
-    left, right, front = [], [], []
-    left_distance, right_distance, front_distance = 0, 0, 0
-    timer = 0
 
     range_controller()

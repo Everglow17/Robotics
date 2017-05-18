@@ -4,7 +4,6 @@ import rospy
 # the message that we get from the arduino
 from std_msgs.msg import Int32
 
-from sensor_msgs.msg import LaserScan
 # the output message controlling the speed and direction of the robot
 from geometry_msgs.msg import Twist
 
@@ -40,8 +39,6 @@ def ir_callback(data):
         left_distace, right_distance, front_distance = 0, 0, 0
         timer = -1
 
-        current_time = rospy.Time.now() #第一个数据扫描的时间 放到改放的位置
-
     else:
         timer += 1
 
@@ -60,7 +57,9 @@ def ir_callback(data):
             front_distance = sum(front[:])/len(front)
             left_distace = sum(left[:])/len(left)
             right_distance = sum(right[:])/len(right)
-
+    print("front_distance", front_distance)
+    print("left_distace", left_distace)
+    print("right_distance", right_distance)
     if front_distance >= 220:
         twist.linear.x =  0.0
     print(twist.linear.x)
@@ -94,36 +93,3 @@ if __name__ == '__main__':
     left_distace, right_distance, front_distance = 0, 0, 0
     timer = 0
     range_controller()
-
-
-#!/usr/bin/env python
-def scan():
-
-    rospy.init_node('laser_scan_publisher')
-
-    scan_pub = rospy.Publisher('scan', LaserScan, queue_size=50)
-
-    num_readings = 260#读一圈的数据个数
-    laser_frequency = #赫兹
-
-    count = 0
-    
-
-    scan = LaserScan()
-
-    scan.header.stamp = current_time
-    scan.header.frame_id = 'laser_frame'
-    scan.angle_min = -1.57
-    scan.angle_max = 1.57
-    scan.angle_increment = 3.14 / num_readings
-    scan.time_increment = (1.0 / laser_frequency) / (num_readings)
-    scan.range_min = 0.0
-    scan.range_max = 100.0
-
-    scan.ranges = []
-    scan.intensities = []
-    for i in range(0, num_readings):
-        scan.ranges.append(1.0)  # fake data
-        scan.intensities.append(100)
-
-    scan_pub.publish(scan)

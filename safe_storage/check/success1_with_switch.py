@@ -7,6 +7,8 @@ from std_msgs.msg import Int32
 # the output message controlling the speed and direction of the robot
 from geometry_msgs.msg import Twist
 
+from math import sqrt
+
 from kobuki_msgs.msg import ButtonEvent
 from kobuki_msgs.msg import BumperEvent
 
@@ -47,11 +49,12 @@ def BumperEventCallback(data):
         bumper = "Right"
     rospy.loginfo("%s bumper is %s."%(bumper, state))
 
-def ir_callback(data):
 
+def ir_callback(data):
     global left, right, front
     global left_distance, right_distance, front_distance
     global timer
+    global pre, now, mainswitch
 
     # Twist is a message type in ros, here we use an Twist message to control kobuki's speed
     # twist. linear.x is the forward velocity, if it is zero, robot will be static,
@@ -62,7 +65,10 @@ def ir_callback(data):
     # Right hand coordinate system: x forward, y left, z up
 
     twist = Twist()
-    twist.linear.x = 0.15
+    if mainswitch:
+        twist.linear.x = 0.
+    else:
+        twist.linear.x = 0.1
     twist.angular.z = 0.
 
 
@@ -81,36 +87,54 @@ def ir_callback(data):
     else:
         timer += 1
 
-        if 0 <= timer and timer < 124:
+        if 0 <= timer and timer < 114:
             left.append(sharp)
 
-        elif 124 <= timer and timer <= 135:
+        elif 114 <= timer and timer <= 145:
             left.append(sharp)
             front.append(sharp)
             right.append(sharp)
 
-        elif 135 < timer and timer <= 259:
+        elif 145 < timer and timer <= 259:
             right.append(sharp)
 
         elif timer == 260:
-            front_distance = sum(front[:])/len(front)
+            i = 1
+            while i<=len(front)-1:
+                if front[i]-front[i-1]>=50 and front[i]-fonrt[i+1]>=50:
+                    del(front[i])
+                else:
+                    i += 1
+            front_distance = max(front[:])
+            # front_distance = sum(front[:])/len(front)
             left_distance = sum(left[:])/len(left)
             right_distance = sum(right[:])/len(right)
+
+            now = right_distance- left_distance
+
     print("front_distance", front_distance)
-    print("left_distance", left_distance)
-    print("right_distance", right_distance)
-    if front_distance >= 220:
+    # print("left_distance", left_distance)
+    # print("right_distance", right_distance)
+    print("pre", pre)
+    print("now", now)
+    print(" ")
+    if timer == 500:
+        pre = now
+
+    if front_distance >= 210:
         twist.linear.x =  0.0
-    print(twist.linear.x)
-    twist.angular.z = 0.012 * (right_distance - left_distance)
+
+    twist.angular.z = 0.012 * (1 + 0.002*abs(pre - now)) * (right_distance - left_distance)
 
     # actually publish the twist message
-    if mainswitch:
-        twist.linear.x = 0.0
-        twist.angular.z = 0.0
+    # if mainswitch:
+    #     twist.linear.x = 0.0
+    #     twist.angular.z = 0.0
     kobuki_velocity_pub.publish(twist)
 
+
 def range_controller():
+
     # define the publisher globally
     global kobuki_velocity_pub
 
@@ -122,19 +146,19 @@ def range_controller():
 
     # subscribe to the topic '/ir_data' of message type Int32. The function 'ir_callback' will be called
     # every time a new message is received - the parameter passed to the function is the message
-
     rospy.Subscriber("/mobile_base/events/button", ButtonEvent, ButtonEventCallback)
     rospy.Subscriber("/mobile_base/events/bumper", BumperEvent, BumperEventCallback)
     rospy.Subscriber("/ir_data", Int32, ir_callback)
+
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
 
-
 # start the line follow
 if __name__ == '__main__':
-    mainswitch = False
     left, right, front = [], [], []
     left_distance, right_distance, front_distance = 0, 0, 0
     timer = 0
+    pre, now = 0, 0
+    mainswitch = False
 
     range_controller()

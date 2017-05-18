@@ -10,10 +10,10 @@ from geometry_msgs.msg import Twist
 from math import sqrt
 
 def ir_callback(data):
-    global left, right, front
-    global left_distace, right_distance, front_distance
+    global left, right
+    global left_distace, right_distance
     global timer
-    global pre, now
+    global shift
 
     # Twist is a message type in ros, here we use an Twist message to control kobuki's speed
     # twist. linear.x is the forward velocity, if it is zero, robot will be static,
@@ -36,51 +36,31 @@ def ir_callback(data):
 
     #read and store
     if rpr220 <= 55:
-        left, right, front = [], [], []
-        left_distace, right_distance, front_distance = 0, 0, 0
+        left, right = [], []
+        left_distace, right_distance = 0, 0
         timer = -1
+        shift = False
 
     else:
         timer += 1
 
-        if 0 <= timer and timer < 114:
+        if 64 <= timer and timer <= 83:
             left.append(sharp)
 
-        elif 114 <= timer and timer <= 145:
-            left.append(sharp)
-            front.append(sharp)
+        elif 175 <= timer and timer <= 194:
             right.append(sharp)
 
-        elif 145 < timer and timer <= 259:
-            right.append(sharp)
+        elif timer == 195:
+            shift = True
 
-        elif timer == 260:
-            i = 1
-            while i<=len(front)-1:
-                if front[i]-front[i-1]>=50 and front[i]-fonrt[i+1]>=50:
-                    del(front[i])
-                else:
-                    i += 1
-            front_distance = max(front[:])
-            # front_distance = sum(front[:])/len(front)
+        elif timer > 195 and shift:
+            shift = False
+
             left_distace = sum(left[:])/len(left)
             right_distance = sum(right[:])/len(right)
 
-            now = right_distance- left_distace
+    twist.angular.z = 0.003 * (right_distance - left_distace)
 
-    print("front_distance", front_distance)
-    print("left_distace", left_distace)
-    print("right_distance", right_distance)
-    print("pre", pre)
-    print("now", now)
-    print(" ")
-    if timer == 500:
-        pre = now
-
-    if front_distance >= 210:
-        twist.linear.x =  0.0
-
-    twist.angular.z = 0.012 * (1 + 0.002*abs(pre - now)) * (right_distance - left_distace)
 
     # actually publish the twist message
     kobuki_velocity_pub.publish(twist)
@@ -106,8 +86,8 @@ def range_controller():
 
 # start the line follow
 if __name__ == '__main__':
-    left, right, front = [], [], []
-    left_distace, right_distance, front_distance = 0, 0, 0
+    left, right = [], []
+    left_distace, right_distance = 0, 0
     timer = 0
-    pre, now = 0, 0
+    shift = False
     range_controller()

@@ -4,16 +4,17 @@ import rospy
 # the message that we get from the arduino
 from std_msgs.msg import Int32
 
-from sensor_msgs.msg import LaserScan
 # the output message controlling the speed and direction of the robot
 from geometry_msgs.msg import Twist
 
 from math import sqrt
 
 def ir_callback(data):
-    global left, right, front
-    global left_distace, right_distance, front_distance
+    global left, right
+    global left_distace, right_distance
     global timer
+    global shift
+    global front
 
     # Twist is a message type in ros, here we use an Twist message to control kobuki's speed
     # twist. linear.x is the forward velocity, if it is zero, robot will be static,
@@ -24,7 +25,7 @@ def ir_callback(data):
     # Right hand coordinate system: x forward, y left, z up
 
     twist = Twist()
-    twist.linear.x = 0.15
+    twist.linear.x = 0.1
     twist.angular.z = 0.
 
 
@@ -36,35 +37,60 @@ def ir_callback(data):
 
     #read and store
     if rpr220 <= 55:
-        left, right, front = [], [], []
-        left_distace, right_distance, front_distance = 0, 0, 0
-        timer = -1
+        left, right = [], []
 
-        current_time = rospy.Time.now() #第一个数据扫描的时间 放到改放的位置
+#----------------------------front---------------start
+        front = []
+#----------------------------front-----------------end
+
+        left_distace, right_distance = 0, 0
+        timer = -1
+        shift = False
 
     else:
         timer += 1
 
-        if 0 <= timer and timer < 124:
+        if 64 <= timer and timer <= 83:
             left.append(sharp)
 
-        elif 124 <= timer and timer <= 135:
-            left.append(sharp)
+#----------------------------front---------------start
+        if 120 <= timer and timer <= 149:
             front.append(sharp)
+#----------------------------front----------------end
+
+        elif 175 <= timer and timer <= 194:
             right.append(sharp)
 
-        elif 135 < timer and timer <= 259:
-            right.append(sharp)
+        elif timer == 195:
 
-        elif timer == 260:
-            front_distance = sum(front[:])/len(front)
+#----------------------------remove noise----------------start
+            front_count = 1
+            while front_count <= (len(front)-2):
+                if abs(front[front_count] - front[front_count-1]) >= 100 and abs(front[front_count] - front[front_count+1]) >= 100:
+                    del(front[front_count])
+                else:
+                    front_count += 1
+
+            left_count = 1
+            while left_count <= (len(left)-2):
+                if abs(left[left_count] - left[left_count-1]) >= 100 and abs(left[left_count] - left[left_count+1]) >= 100:
+                    del(left[left_count])
+                else:
+                    left_count += 1
+
+            right_count = 1
+            while right_count <= (len(right)-2):
+                if abs(right[right_count] - right[right_count-1]) >= 100 and abs(right[right_count] - right[right_count+1]) >= 100:
+                    del(right[right_count])
+                else:
+                    right_count += 1
+#----------------------------remove noise---------------end
+
             left_distace = sum(left[:])/len(left)
             right_distance = sum(right[:])/len(right)
 
-    if front_distance >= 220:
-        twist.linear.x =  0.0
-    print(twist.linear.x)
-    twist.angular.z = 0.012 * (right_distance - left_distace)
+    twist.angular.z = 0.003 * (right_distance - left_distace)
+
 
     # actually publish the twist message
     kobuki_velocity_pub.publish(twist)
@@ -90,40 +116,11 @@ def range_controller():
 
 # start the line follow
 if __name__ == '__main__':
-    left, right, front = [], [], []
-    left_distace, right_distance, front_distance = 0, 0, 0
+    left, right = [], []
+    #--------------------front--------------------start
+    front = []
+    #--------------------front--------------------end
+    left_distace, right_distance = 0, 0
     timer = 0
+    shift = False
     range_controller()
-
-
-#!/usr/bin/env python
-def scan():
-
-    rospy.init_node('laser_scan_publisher')
-
-    scan_pub = rospy.Publisher('scan', LaserScan, queue_size=50)
-
-    num_readings = 260#读一圈的数据个数
-    laser_frequency = #赫兹
-
-    count = 0
-    
-
-    scan = LaserScan()
-
-    scan.header.stamp = current_time
-    scan.header.frame_id = 'laser_frame'
-    scan.angle_min = -1.57
-    scan.angle_max = 1.57
-    scan.angle_increment = 3.14 / num_readings
-    scan.time_increment = (1.0 / laser_frequency) / (num_readings)
-    scan.range_min = 0.0
-    scan.range_max = 100.0
-
-    scan.ranges = []
-    scan.intensities = []
-    for i in range(0, num_readings):
-        scan.ranges.append(1.0)  # fake data
-        scan.intensities.append(100)
-
-    scan_pub.publish(scan)
