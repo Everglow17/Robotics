@@ -59,12 +59,13 @@ def ir_callback(data):
         elif 145 < timer and timer <= 259:
             right.append(sharp)
             allist.append(sharp)
+	    #print(allist)
 
 
         elif timer == 260:
             i = 1
             while i<=len(front)-1:
-                if front[i]-front[i-1]>=50 and front[i]-fonrt[i+1]>=50:
+                if front[i]-front[i-1]>=50 and front[i]-front[i+1]>=50:
                     del(front[i])
                 else:
                     i += 1
@@ -104,15 +105,13 @@ def range_controller():
 
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
-
-def scan():
-
+    
     rospy.init_node('laser_scan_publisher')
 
     scan_pub = rospy.Publisher('scan', LaserScan, queue_size=50)
 
-    num_readings = 260#读一圈的数据个数
-    laser_frequency = 260#赫兹
+    num_readings = 260
+    laser_frequency = 260
 
     count = 0
 
@@ -125,14 +124,17 @@ def scan():
     scan.angle_increment = 3.14 / num_readings
     scan.time_increment = (1.0 / laser_frequency) / (num_readings)
     scan.range_min = 0.0
-    scan.range_max = 100.0
+    scan.range_max = 1000.0
+    print(allist)
 
     scan.ranges = allist
+    print(scan.ranges)
     scan.intensities = []
-    for i in range(0, num_readings):  # fake data
+    for i in range(0, num_readings):  
         scan.intensities.append(100)
 
     scan_pub.publish(scan)
+
 # start the line follow
 if __name__ == '__main__':
     left, right, front = [], [], []
