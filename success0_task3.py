@@ -40,8 +40,6 @@ def ir_callback(data):
         left_distace, right_distance, front_distance = 0, 0, 0
         timer = -1
 
-        current_time = rospy.Time.now() #第一个数据扫描的时间 放到改放的位置
-
     else:
         timer += 1
 
@@ -103,11 +101,11 @@ def scan():
 
     scan_pub = rospy.Publisher('scan', LaserScan, queue_size=50)
 
-    num_readings = 260#读一圈的数据个数
+    num_readings = #读一圈的数据个数
     laser_frequency = #赫兹
 
     count = 0
-    
+    current_time = rospy.Time.now() #第一个数据扫描的时间 放到改放的位置
 
     scan = LaserScan()
 

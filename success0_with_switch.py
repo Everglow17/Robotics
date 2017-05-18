@@ -50,7 +50,7 @@ def BumperEventCallback(data):
 def ir_callback(data):
 
     global left, right, front
-    global left_distance, right_distance, front_distance
+    global left_distace, right_distance, front_distance
     global timer
 
     # Twist is a message type in ros, here we use an Twist message to control kobuki's speed
@@ -75,7 +75,7 @@ def ir_callback(data):
     #read and store
     if rpr220 <= 55:
         left, right, front = [], [], []
-        left_distance, right_distance, front_distance = 0, 0, 0
+        left_distace, right_distance, front_distance = 0, 0, 0
         timer = -1
 
     else:
@@ -94,15 +94,15 @@ def ir_callback(data):
 
         elif timer == 260:
             front_distance = sum(front[:])/len(front)
-            left_distance = sum(left[:])/len(left)
+            left_distace = sum(left[:])/len(left)
             right_distance = sum(right[:])/len(right)
     print("front_distance", front_distance)
-    print("left_distance", left_distance)
+    print("left_distace", left_distace)
     print("right_distance", right_distance)
     if front_distance >= 220:
         twist.linear.x =  0.0
     print(twist.linear.x)
-    twist.angular.z = 0.012 * (right_distance - left_distance)
+    twist.angular.z = 0.012 * (right_distance - left_distace)
 
     # actually publish the twist message
     if mainswitch:
@@ -134,7 +134,7 @@ def range_controller():
 if __name__ == '__main__':
     mainswitch = False
     left, right, front = [], [], []
-    left_distance, right_distance, front_distance = 0, 0, 0
+    left_distace, right_distance, front_distance = 0, 0, 0
     timer = 0
 
     range_controller()
